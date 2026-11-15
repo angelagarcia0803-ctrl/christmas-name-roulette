@@ -102,22 +102,39 @@
       </div>
       <div class="info">
         <h2>ℹ️ How it works</h2>
-        <p>All names stay in the “Who is spinning?” dropdown. A name is removed from the wheel only after someone successfully picks another person. If the spinner picks their own name, nothing is removed and they can spin again.</p>
+        <p>All 17 names always stay in the “Who is spinning?” dropdown. The wheel only shows safe picks: no self-picks or sibling-picks. Each child gets one turn and each recipient is picked once. The wheel checks that the remaining draw can still be completed.</p>
       </div>
     </div>
   </section>
 </main>
 <script>
 (() => {
-  // The supplied list contains 17 names (although the request mentioned 15).
   const allNames = [
     "ISAIAH", "WILLIAM", "CALEB", "HARRY", "NATHAN", "JUSTIN", "JACOB",
     "CHLOE", "CAILA", "ALONZO", "ASHER", "AGATHA", "DEUS", "ELISHA",
     "YOHAN", "GRACIE", "AUSTIN"
   ];
-  let wheelNames = [...allNames];
+
+  const siblingGroups = [
+    ["WILLIAM", "CALEB", "HARRY"],
+    ["NATHAN", "JUSTIN", "JACOB"],
+    ["AGATHA", "ASHER"],
+    ["DEUS", "ELISHA"],
+    ["GRACIE", "AUSTIN"],
+    ["CHLOE", "CAILA", "ALONZO"]
+  ];
+
+  const siblingOf = {};
+  siblingGroups.forEach(group => group.forEach(name => {
+    siblingOf[name] = new Set(group.filter(other => other !== name));
+  }));
+
+  let wheelNames = [...allNames];       // Recipients not yet picked
+  let completedSpinners = new Set();    // Children who have already given
   let rotation = 0;
   let spinning = false;
+  let displayNames = [];
+
   const canvas = document.getElementById("wheel");
   const ctx = canvas.getContext("2d");
   const spinnerSelect = document.getElementById("spinner");
@@ -128,8 +145,7 @@
   const count = document.getElementById("count");
   const colors = ["#f6b6c8","#a9d5ee","#f8d58e","#b9dfc7","#c7b9e8","#f4c5a1","#a9c5df","#f0d0df"];
 
-  // Build the spinner dropdown once from allNames. It is intentionally never
-  // rebuilt or filtered when a name is picked from the roulette wheel.
+  // The dropdown is populated once and is never filtered or shortened.
   allNames.forEach(name => {
     const option = document.createElement("option");
     option.value = name;
@@ -137,17 +153,64 @@
     spinnerSelect.appendChild(option);
   });
 
-  function drawWheel() {
+  function isSibling(a, b) {
+    return !!(siblingOf[a] && siblingOf[a].has(b));
+  }
+
+  // Tests whether the remaining children can still be assigned one-to-one,
+  // with no child assigned themselves or a sibling.
+  function hasPerfectMatching(givers, recipients) {
+    if (givers.length !== recipients.length) return false;
+    const recipientToGiver = new Map();
+
+    function findMatch(giver, seen) {
+      for (const recipient of recipients) {
+        if (recipient === giver || isSibling(giver, recipient) || seen.has(recipient)) continue;
+        seen.add(recipient);
+        if (!recipientToGiver.has(recipient) ||
+            findMatch(recipientToGiver.get(recipient), seen)) {
+          recipientToGiver.set(recipient, giver);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    for (const giver of givers) {
+      if (!findMatch(giver, new Set())) return false;
+    }
+    return true;
+  }
+
+  // Only offer a recipient if choosing them leaves a complete valid draw possible.
+  function getSafeCandidates(spinner) {
+    if (completedSpinners.has(spinner)) return [];
+    const otherGivers = allNames.filter(n => n !== spinner && !completedSpinners.has(n));
+    return wheelNames.filter(candidate => {
+      if (candidate === spinner || isSibling(spinner, candidate)) return false;
+      const remainingRecipients = wheelNames.filter(n => n !== candidate);
+      return hasPerfectMatching(otherGivers, remainingRecipients);
+    });
+  }
+
+  function drawWheel(names = displayNames) {
+    displayNames = [...names];
     const cx = canvas.width/2, cy = canvas.height/2, radius = 325;
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    if (!wheelNames.length) {
-      ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.fillStyle="#e9edf4"; ctx.fill();
-      ctx.fillStyle="#34425d"; ctx.font="bold 32px system-ui"; ctx.textAlign="center";
-      ctx.fillText("All names picked!",cx,cy);
+
+    if (!displayNames.length) {
+      ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2);
+      ctx.fillStyle="#e9edf4"; ctx.fill();
+      ctx.fillStyle="#34425d"; ctx.font="bold 27px system-ui"; ctx.textAlign="center";
+      const message = completedSpinners.size === allNames.length
+        ? "Everyone has picked!"
+        : "Choose an available spinner";
+      ctx.fillText(message,cx,cy);
       return;
     }
-    const slice = Math.PI*2/wheelNames.length;
-    wheelNames.forEach((name,i) => {
+
+    const slice = Math.PI*2/displayNames.length;
+    displayNames.forEach((name,i) => {
       const start = rotation + i*slice - Math.PI/2;
       const end = start + slice;
       ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,radius,start,end); ctx.closePath();
@@ -155,7 +218,7 @@
       ctx.strokeStyle="#ffffff"; ctx.lineWidth=4; ctx.stroke();
       ctx.save(); ctx.translate(cx,cy); ctx.rotate(start+slice/2);
       ctx.textAlign="right"; ctx.textBaseline="middle";
-      const fontSize = wheelNames.length > 13 ? 19 : wheelNames.length > 8 ? 22 : 27;
+      const fontSize = displayNames.length > 13 ? 19 : displayNames.length > 8 ? 22 : 27;
       ctx.font=`800 ${fontSize}px system-ui`;
       ctx.fillStyle="#26334d";
       ctx.fillText(name,radius-22,0);
@@ -168,33 +231,58 @@
   }
 
   function updateInfo() {
-    pickedList.textContent = wheelNames.length === allNames.length
-      ? "No names picked yet."
-      : allNames.filter(n => !wheelNames.includes(n)).join(", ");
-    count.textContent = `${wheelNames.length} name${wheelNames.length===1?"":"s"} remaining on the wheel · ${allNames.length} names available in the spinner dropdown`;
-    spinBtn.disabled = spinning || wheelNames.length === 0;
+    const picked = allNames.filter(n => !wheelNames.includes(n));
+    pickedList.textContent = picked.length ? picked.join(", ") : "No names picked yet.";
+    count.textContent = `${wheelNames.length} recipients left · ${completedSpinners.size} of ${allNames.length} children have had their turn`;
+    const spinner = spinnerSelect.value;
+    const safe = getSafeCandidates(spinner);
+    spinBtn.disabled = spinning || safe.length === 0;
+    spinBtn.textContent = completedSpinners.has(spinner)
+      ? "TURN ALREADY COMPLETED"
+      : "🎡 SPIN THE WHEEL";
+   }
+
+  function onSpinnerChange() {
+    if (spinning) return;
+    rotation = 0;
+    const spinner = spinnerSelect.value;
+    drawWheel(getSafeCandidates(spinner));
+    updateInfo();
+    if (completedSpinners.has(spinner)) {
+      resultName.textContent = `${spinner} has already had a turn. Choose another child.`;
+    } else if (!getSafeCandidates(spinner).length && completedSpinners.size < allNames.length) {
+      resultName.textContent = "No valid pick available for this spinner.";
+    } else {
+      resultName.textContent = "Ready to spin?";
+    }
   }
 
   function spin() {
-    if (spinning || !wheelNames.length) return;
+    if (spinning) return;
     const spinner = spinnerSelect.value;
-    const selectedIndex = Math.floor(Math.random()*wheelNames.length);
-    const chosen = wheelNames[selectedIndex];
 
-    if (chosen === spinner) {
-      // A self-pick does not change the wheel or remove any name.
-      alert("Oops! You picked your own name! Please spin the roulette again.");
-      resultName.textContent = "Try again! No name was removed.";
+    if (completedSpinners.has(spinner)) {
+      alert(`${spinner} has already had a turn. Please choose another child.`);
       return;
     }
 
+    const candidates = getSafeCandidates(spinner);
+    if (!candidates.length) {
+      alert("There are no safe picks for this spinner. Please choose another child.");
+      return;
+    }
+
+    // The selected name is guaranteed not to be the spinner or a sibling,
+    // and the matching check guarantees the remaining draw can still finish.
+    const chosen = candidates[Math.floor(Math.random()*candidates.length)];
     spinning = true;
-    updateInfo();
+    spinBtn.disabled = true;
     spinBtn.textContent = "SPINNING…";
-    const slice = Math.PI*2/wheelNames.length;
-    // The pointer is at -90 degrees. Rotate the chosen slice midpoint to that pointer.
+
+    const slice = Math.PI*2/candidates.length;
+    const chosenIndex = candidates.indexOf(chosen);
     const current = ((rotation % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
-    const targetMod = ((-(selectedIndex+0.5)*slice)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+    const targetMod = ((-(chosenIndex+0.5)*slice)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
     const delta = ((targetMod-current)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
     const startRotation = rotation;
     const totalRotation = delta + Math.PI*2*6;
@@ -205,19 +293,16 @@
       const t = Math.min(1,(now-startTime)/duration);
       const eased = 1-Math.pow(1-t,4);
       rotation = startRotation + totalRotation*eased;
-      drawWheel();
+      drawWheel(candidates);
       if (t < 1) {
         requestAnimationFrame(animate);
       } else {
         rotation = ((rotation%(Math.PI*2))+(Math.PI*2))%(Math.PI*2);
-        // Remove only the successfully selected recipient from the wheel.
-        // Do not modify allNames or spinnerSelect: every child remains
-        // selectable in WHO IS SPINNING for every subsequent turn.
         wheelNames = wheelNames.filter(n => n !== chosen);
-        resultName.textContent = chosen + " 🎉";
+        completedSpinners.add(spinner);
         spinning = false;
-        spinBtn.textContent = "🎡 SPIN THE WHEEL";
-        drawWheel();
+        resultName.textContent = `${spinner} picked ${chosen}! 🎉`;
+        drawWheel(getSafeCandidates(spinnerSelect.value));
         updateInfo();
       }
     }
@@ -227,15 +312,17 @@
   function reset() {
     if (spinning) return;
     wheelNames = [...allNames];
+    completedSpinners = new Set();
     rotation = 0;
     resultName.textContent = "Ready to spin?";
-    drawWheel();
+    drawWheel(getSafeCandidates(spinnerSelect.value));
     updateInfo();
   }
 
+  spinnerSelect.addEventListener("change",onSpinnerChange);
   spinBtn.addEventListener("click",spin);
   resetBtn.addEventListener("click",reset);
-  drawWheel();
+  drawWheel(getSafeCandidates(spinnerSelect.value));
   updateInfo();
 })();
 </script>
