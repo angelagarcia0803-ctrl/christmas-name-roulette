@@ -2,140 +2,217 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#7b3343">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Christmas Family Name Roulette</title>
 <style>
-:root{--wine:#7b3343;--gold:#c58b36;--cream:#fff8eb;--ink:#30252a;--muted:#766970}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:linear-gradient(145deg,#fff8eb,#f4e8dc);font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);padding:24px 14px 40px}
-main{max-width:720px;margin:auto}
-header{text-align:center;margin-bottom:22px}
-h1{font-family:Georgia,serif;color:var(--wine);font-size:clamp(2rem,7vw,3.2rem);margin:8px 0}
-.subtitle{color:var(--muted);margin:0}
-.panel{background:#fff;border:1px solid #eadbd0;border-radius:22px;padding:clamp(16px,4vw,26px);box-shadow:0 12px 35px #55332212;margin:16px 0}
-label{display:block;font-weight:700;margin-bottom:8px}
-select,button{font:inherit}
-select{width:100%;padding:13px;border:1px solid #dbc9bf;border-radius:12px;background:#fff;color:var(--ink)}
-.wheel-wrap{width:min(88vw,390px);aspect-ratio:1;margin:24px auto 14px;position:relative}
-#wheel{width:100%;height:100%;display:block;border-radius:50%;filter:drop-shadow(0 8px 12px #39221d30);transition:transform 5s cubic-bezier(.12,.75,.12,1)}
-.pointer{position:absolute;z-index:2;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:34px solid var(--gold);filter:drop-shadow(0 2px 2px #0003)}
-.spin{display:block;width:100%;border:0;border-radius:14px;background:var(--wine);color:#fff;padding:16px;font-size:1.12rem;font-weight:800;cursor:pointer}
-.spin:disabled{opacity:.5;cursor:not-allowed}
-.hint{text-align:center;color:var(--muted);font-size:.9rem;min-height:1.4em}
-.result{background:var(--cream);border:1px solid #ead7b7;border-radius:16px;padding:18px;text-align:center;margin-top:16px;min-height:94px}
-.result .winner{font: bold 2rem Georgia,serif;color:var(--wine);margin-top:5px}
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.count{font-size:.9rem;color:var(--muted)}
-.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
-.chip{background:#f7eee8;border:1px solid #eadbd0;border-radius:99px;padding:6px 11px;font-size:.85rem}
-.picked .chip{background:#edf4ed;border-color:#cddfcf}
-details{margin-top:18px}
-summary{font-weight:700;cursor:pointer}
-.reset{margin-top:18px;width:100%;padding:12px;border-radius:12px;border:1px solid #dbc9bf;background:white;color:var(--wine);font-weight:700;cursor:pointer}
-.note{font-size:.83rem;color:var(--muted);line-height:1.5;margin:14px 0 0}
-@media(prefers-reduced-motion:reduce){#wheel{transition:none}}
+  :root { --ink:#243047; --pink:#f5a6b8; --cream:#fffaf3; --blue:#9bc8e8; }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; min-height:100vh; padding:28px 16px 40px;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--ink); background:linear-gradient(145deg,#fff4e9,#f7e9f3 55%,#eaf5fb);
+    display:flex; justify-content:center;
+  }
+  main { width:min(900px,100%); text-align:center; }
+  h1 { margin:8px 0 6px; font-size:clamp(1.7rem,4vw,2.5rem); }
+  .subtitle { margin:0 0 24px; color:#596579; }
+  .panel {
+    background:rgba(255,255,255,.86); border:1px solid rgba(255,255,255,.9);
+    border-radius:24px; padding:22px; box-shadow:0 12px 35px rgba(51,54,85,.10);
+  }
+  .controls { display:flex; flex-wrap:wrap; justify-content:center; align-items:end; gap:12px; margin-bottom:18px; }
+  label { display:block; text-align:left; font-weight:700; margin-bottom:6px; }
+  select {
+    min-width:220px; padding:12px 14px; border:1px solid #cbd3df; border-radius:12px;
+    background:white; color:var(--ink); font:inherit;
+  }
+  button {
+    border:0; border-radius:999px; padding:13px 24px; font:700 1rem inherit;
+    font-size:1rem; font-weight:750; cursor:pointer; transition:transform .15s,opacity .15s;
+  }
+  button:hover { transform:translateY(-1px); }
+  button:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+  #spinBtn { color:white; background:#536fbd; box-shadow:0 5px 14px #536fbd44; }
+  #resetBtn { color:#34425d; background:#e8edf5; }
+  .wheel-wrap { width:min( min(76vw,560px),100%); margin:8px auto 18px; position:relative; }
+  canvas { display:block; width:100%; height:auto; filter:drop-shadow(0 9px 12px rgba(34,44,70,.16)); }
+  .pointer {
+    position:absolute; z-index:2; top:-5px; left:50%; transform:translateX(-50%);
+    width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;
+    border-top:0;border-bottom:34px solid #26334d; filter:drop-shadow(0 2px 2px #0003);
+  }
+  .result { min-height:64px; display:flex; flex-direction:column; justify-content:center; gap:4px; }
+  .result small { color:#667085; font-weight:650; letter-spacing:.06em; text-transform:uppercase; }
+  #resultName { font-size:clamp(1.6rem,5vw,2.4rem); font-weight:850; color:#536fbd; }
+  .bottom { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px; text-align:left; }
+  .info { background:#fff; border-radius:16px; padding:14px 16px; }
+  .info h2 { font-size:1rem; margin:0 0 8px; }
+  .info p { margin:0; color:#667085; line-height:1.45; font-size:.92rem; }
+  #pickedList { color:#596579; line-height:1.6; overflow-wrap:anywhere; }
+  .count { color:#667085; font-size:.9rem; margin-top:8px; }
+  @media(max-width:600px) { .panel{padding:16px 12px}.bottom{grid-template-columns:1fr}.controls{align-items:stretch}.controls>div{width:100%}select{width:100%}button{width:100%} }
 </style>
 </head>
 <body>
 <main>
-<header>
-<div aria-hidden="true" style="font-size:2rem">🎄 🎁 🎄</div>
-<h1>Family Name Roulette</h1>
-<p class="subtitle">A little Christmas fun — who will you pick?</p>
-</header>
-<section class="panel">
-<label for="player">Who is spinning?</label>
-<select id="player"><option value="">Choose your name…</option></select>
-<div class="wheel-wrap"><div class="pointer"></div><canvas id="wheel" width="800" height="800" aria-label="Name roulette wheel"></canvas></div>
-<p class="hint" id="hint">Choose your name, then spin the wheel!</p>
-<button class="spin" id="spin" disabled>🎡 SPIN THE WHEEL</button>
-<div class="result" id="result" aria-live="polite">
-  <div>Ready, set, spin!</div><div class="winner">Good luck! ✨</div>
-</div>
-</section>
-<section class="panel">
-<div class="row"><strong>Names still on the wheel</strong><span class="count" id="remainingCount">15 remaining</span></div>
-<div class="chips" id="remaining"></div>
-<details><summary>Names already picked</summary><div class="chips picked" id="picked"></div></details>
-<button class="reset" id="reset">↻ Reset game</button>
-<p class="note">Rule: If the wheel lands on your own name, spin again. Your own name stays on the wheel. When you land on someone else, their name is removed so they can only be picked once.</p>
-</section>
-<p class="note" style="text-align:center">Tip: For one shared game, pass the same phone or tablet to each player. The game state is saved in this browser.</p>
+  <h1>🎄 Christmas Family Name Roulette 🎁</h1>
+  <p class="subtitle">Choose who is spinning, then spin the wheel to pick a name!</p>
+  <section class="panel">
+    <div class="controls">
+      <div>
+        <label for="spinner">WHO IS SPINNING?</label>
+        <select id="spinner" aria-label="Who is spinning"></select>
+      </div>
+      <button id="spinBtn" type="button">🎡 SPIN THE WHEEL</button>
+      <button id="resetBtn" type="button">↻ Reset wheel</button>
+    </div>
+    <div class="wheel-wrap">
+      <div class="pointer"></div>
+      <canvas id="wheel" width="700" height="700" aria-label="Name roulette wheel"></canvas>
+    </div>
+    <div class="result" aria-live="polite">
+      <small>Selected name</small>
+      <div id="resultName">Ready to spin?</div>
+    </div>
+    <div class="count" id="count"></div>
+    <div class="bottom">
+      <div class="info">
+        <h2>✅ Already picked</h2>
+        <p id="pickedList">No names picked yet.</p>
+      </div>
+      <div class="info">
+        <h2>ℹ️ How it works</h2>
+        <p>All names stay in the “Who is spinning?” dropdown. A name is removed from the wheel only after someone successfully picks another person. If the spinner picks their own name, nothing is removed and they can spin again.</p>
+      </div>
+    </div>
+  </section>
 </main>
 <script>
 (() => {
-const initialNames = ["Isaiah","William","Caleb","Harry","Nathan","Justin","Jacob","Chloe","Cailla","Alonzo","Asher","Agatha","Deus","Elisha","Yohan"];
-const colors = ["#d7a447","#8d3e50","#426d5b","#527795","#b7784b","#80618c","#c77e87","#658779","#a88b48","#596d91","#bd7448","#7e956c","#9c6479","#568394","#c39a6d"];
-let remaining = [...initialNames], picked = [], busy = false, rotation = 0;
-const $ = id => document.getElementById(id);
-const canvas = $("wheel"), ctx = canvas.getContext("2d"), player = $("player");
-function drawWheel(){
- const n=remaining.length, cx=400, cy=400, radius=390;
- ctx.clearRect(0,0,800,800);
- if(!n){ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.fillStyle="#7b3343";ctx.fill();ctx.fillStyle="#fff";ctx.font="bold 48px system-ui";ctx.textAlign="center";ctx.fillText("ALL DONE!",cx,cy);return;}
- const slice=2*Math.PI/n;
- remaining.forEach((name,i)=>{
-  const start=-Math.PI/2+i*slice, end=start+slice;
-  ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,radius,start,end);ctx.closePath();
-  ctx.fillStyle=colors[initialNames.indexOf(name)%colors.length];ctx.fill();
-  ctx.strokeStyle="#fff";ctx.lineWidth=5;ctx.stroke();
-  ctx.save();ctx.translate(cx,cy);ctx.rotate(start+slice/2);
-  ctx.textAlign="right";ctx.textBaseline="middle";ctx.fillStyle="#fff";
-  ctx.font=`bold ${n>12?27:n>8?32:n>5?38:44}px system-ui`;
-  ctx.shadowColor="#0007";ctx.shadowBlur=3;
-  ctx.fillText(name,radius-25,0, n>10?205:260);ctx.restore();
- });
- ctx.beginPath();ctx.arc(cx,cy,52,0,Math.PI*2);ctx.fillStyle="#fff8eb";ctx.fill();ctx.strokeStyle="#c58b36";ctx.lineWidth=8;ctx.stroke();
- ctx.fillStyle="#7b3343";ctx.font="bold 23px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("FAMILY",cx,cy);
-}
-function render(){
- player.innerHTML='<option value="">Choose your name…</option>'+initialNames.map(n=>`<option value="${n}" ${picked.includes(n)?"disabled":""}>${n}${picked.includes(n)?" (already picked)":""}</option>`).join("");
- $("remainingCount").textContent=`${remaining.length} remaining`;
- $("remaining").innerHTML=remaining.map(n=>`<span class="chip">${n}</span>`).join("")||'<span class="count">All names have been picked!</span>';
- $("picked").innerHTML=picked.map(n=>`<span class="chip">${n}</span>`).join("")||'<span class="count">No names picked yet.</span>';
- $("spin").disabled=busy||!player.value||remaining.length===0;
- drawWheel();
-}
-player.addEventListener("change",()=>{ $("spin").disabled=busy||!player.value||!remaining.length; $("hint").textContent=player.value?`${player.value} is up — good luck!`:"Choose your name, then spin the wheel!";});
-$("spin").addEventListener("click",()=>{
- if(busy||!player.value||!remaining.length)return;
- const currentPlayer=player.value;
- if(remaining.length===1&&remaining[0]===currentPlayer){
-  $("result").innerHTML="<div>There are no other names left to pick.</div><div class='winner'>Game complete! 🎉</div>";return;
- }
- busy=true;render();
- const index=Math.floor(Math.random()*remaining.length), chosen=remaining[index], slice=360/remaining.length;
- const desired=((-(index+.5)*slice)%360+360)%360;
- const current=((rotation%360)+360)%360;
- rotation += 360*6 + ((desired-current+360)%360);
- canvas.style.transform=`rotate(${rotation}deg)`;
- $("result").innerHTML="<div>🎡 The wheel is spinning…</div><div class='winner'>Who will it be?</div>";
- $("hint").textContent="Wait for the wheel to stop…";
- setTimeout(()=>{
-  if(chosen===currentPlayer){
-   $("result").innerHTML=`<div>😄 The wheel landed on your own name!</div><div class="winner">${chosen} — SPIN AGAIN!</div>`;
-   $("hint").textContent="No name removed. Spin again!";
-  }else{
-   remaining.splice(index,1);picked.push(chosen);
-   $("result").innerHTML=`<div>🎉 ${currentPlayer} picked:</div><div class="winner">${chosen}</div><div style="margin-top:6px">This name has been removed from the wheel.</div>`;
-   $("hint").textContent=`Congratulations! ${chosen} has been picked.`;
-   rotation=0;canvas.style.transition="none";canvas.style.transform="rotate(0deg)";drawWheel();void canvas.offsetWidth;canvas.style.transition="transform 5s cubic-bezier(.12,.75,.12,1)";
+  // The supplied list contains 17 names (although the request mentioned 15).
+  const allNames = [
+    "ISAIAH", "WILLIAM", "CALEB", "HARRY", "NATHAN", "JUSTIN", "JACOB",
+    "CHLOE", "CAILA", "ALONZO", "ASHER", "AGATHA", "DEUS", "ELISHA",
+    "YOHAN", "GRACIE", "AUSTIN"
+  ];
+  let wheelNames = [...allNames];
+  let rotation = 0;
+  let spinning = false;
+  const canvas = document.getElementById("wheel");
+  const ctx = canvas.getContext("2d");
+  const spinnerSelect = document.getElementById("spinner");
+  const spinBtn = document.getElementById("spinBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const resultName = document.getElementById("resultName");
+  const pickedList = document.getElementById("pickedList");
+  const count = document.getElementById("count");
+  const colors = ["#f6b6c8","#a9d5ee","#f8d58e","#b9dfc7","#c7b9e8","#f4c5a1","#a9c5df","#f0d0df"];
+
+  allNames.forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    spinnerSelect.appendChild(option);
+  });
+
+  function drawWheel() {
+    const cx = canvas.width/2, cy = canvas.height/2, radius = 325;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (!wheelNames.length) {
+      ctx.beginPath(); ctx.arc(cx,cy,radius,0,Math.PI*2); ctx.fillStyle="#e9edf4"; ctx.fill();
+      ctx.fillStyle="#34425d"; ctx.font="bold 32px system-ui"; ctx.textAlign="center";
+      ctx.fillText("All names picked!",cx,cy);
+      return;
+    }
+    const slice = Math.PI*2/wheelNames.length;
+    wheelNames.forEach((name,i) => {
+      const start = rotation + i*slice - Math.PI/2;
+      const end = start + slice;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,radius,start,end); ctx.closePath();
+      ctx.fillStyle = colors[i%colors.length]; ctx.fill();
+      ctx.strokeStyle="#ffffff"; ctx.lineWidth=4; ctx.stroke();
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(start+slice/2);
+      ctx.textAlign="right"; ctx.textBaseline="middle";
+      const fontSize = wheelNames.length > 13 ? 19 : wheelNames.length > 8 ? 22 : 27;
+      ctx.font=`800 ${fontSize}px system-ui`;
+      ctx.fillStyle="#26334d";
+      ctx.fillText(name,radius-22,0);
+      ctx.restore();
+    });
+    ctx.beginPath(); ctx.arc(cx,cy,48,0,Math.PI*2); ctx.fillStyle="#fff"; ctx.fill();
+    ctx.lineWidth=7; ctx.strokeStyle="#26334d"; ctx.stroke();
+    ctx.fillStyle="#26334d"; ctx.font="bold 20px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText("SPIN",cx,cy);
   }
-  busy=false;render();
-  if(!remaining.length)$("result").innerHTML="<div class='winner'>🎊 Game complete!</div><div>All 15 names have been picked!</div>";
- },5100);
-});
-$("reset").addEventListener("click",()=>{
- if(busy)return;
- if(!confirm("Reset the game and restore all 15 names?"))return;
- remaining=[...initialNames];picked=[];rotation=0;
- canvas.style.transition="none";canvas.style.transform="rotate(0deg)";
- $("result").innerHTML="<div>Ready, set, spin!</div><div class='winner'>Good luck! ✨</div>";
- $("hint").textContent="Choose your name, then spin the wheel!";
- player.value="";render();void canvas.offsetWidth;canvas.style.transition="transform 5s cubic-bezier(.12,.75,.12,1)";
-});
-render();
+
+  function updateInfo() {
+    pickedList.textContent = wheelNames.length === allNames.length
+      ? "No names picked yet."
+      : allNames.filter(n => !wheelNames.includes(n)).join(", ");
+    count.textContent = `${wheelNames.length} name${wheelNames.length===1?"":"s"} remaining on the wheel · ${allNames.length} names available in the spinner dropdown`;
+    spinBtn.disabled = spinning || wheelNames.length === 0;
+  }
+
+  function spin() {
+    if (spinning || !wheelNames.length) return;
+    const spinner = spinnerSelect.value;
+    const selectedIndex = Math.floor(Math.random()*wheelNames.length);
+    const chosen = wheelNames[selectedIndex];
+
+    if (chosen === spinner) {
+      // A self-pick does not change the wheel or remove any name.
+      alert("Oops! You picked your own name! Please spin the roulette again.");
+      resultName.textContent = "Try again! No name was removed.";
+      return;
+    }
+
+    spinning = true;
+    updateInfo();
+    spinBtn.textContent = "SPINNING…";
+    const slice = Math.PI*2/wheelNames.length;
+    // The pointer is at -90 degrees. Rotate the chosen slice midpoint to that pointer.
+    const current = ((rotation % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+    const targetMod = ((-(selectedIndex+0.5)*slice)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+    const delta = ((targetMod-current)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+    const startRotation = rotation;
+    const totalRotation = delta + Math.PI*2*6;
+    const duration = 4200;
+    const startTime = performance.now();
+
+    function animate(now) {
+      const t = Math.min(1,(now-startTime)/duration);
+      const eased = 1-Math.pow(1-t,4);
+      rotation = startRotation + totalRotation*eased;
+      drawWheel();
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        rotation = ((rotation%(Math.PI*2))+(Math.PI*2))%(Math.PI*2);
+        // Remove only the successfully selected recipient from the wheel.
+        wheelNames = wheelNames.filter(n => n !== chosen);
+        resultName.textContent = chosen + " 🎉";
+        spinning = false;
+        spinBtn.textContent = "🎡 SPIN THE WHEEL";
+        drawWheel();
+        updateInfo();
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+
+  function reset() {
+    if (spinning) return;
+    wheelNames = [...allNames];
+    rotation = 0;
+    resultName.textContent = "Ready to spin?";
+    drawWheel();
+    updateInfo();
+  }
+
+  spinBtn.addEventListener("click",spin);
+  resetBtn.addEventListener("click",reset);
+  drawWheel();
+  updateInfo();
 })();
 </script>
 </body>
