@@ -8,7 +8,8 @@
   :root { --ink:#243047; --pink:#f5a6b8; --cream:#fffaf3; --blue:#9bc8e8; }
   * { box-sizing:border-box; }
   body {
-    margin:0; min-height:100vh; padding:28px 16px 40px;
+    margin:0; min-height:100vh;
+    padding: max(18px, env(safe-area-inset-top)) 14px max(28px, env(safe-area-inset-bottom));
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     color:var(--ink); background:linear-gradient(145deg,#fff4e9,#f7e9f3 55%,#eaf5fb);
     display:flex; justify-content:center;
@@ -23,18 +24,19 @@
   .controls { display:flex; flex-wrap:wrap; justify-content:center; align-items:end; gap:12px; margin-bottom:18px; }
   label { display:block; text-align:left; font-weight:700; margin-bottom:6px; }
   select {
-    min-width:220px; padding:12px 14px; border:1px solid #cbd3df; border-radius:12px;
-    background:white; color:var(--ink); font:inherit;
+    min-width:220px; min-height:48px; padding:12px 14px; border:1px solid #cbd3df; border-radius:12px;
+    background:white; color:var(--ink); font:inherit; font-size:16px;
   }
   button {
-    border:0; border-radius:999px; padding:13px 24px; font:700 1rem inherit;
-    font-size:1rem; font-weight:750; cursor:pointer; transition:transform .15s,opacity .15s;
+    border:0; border-radius:999px; padding:13px 24px; min-height:48px;
+    font-size:1rem; font-weight:750; cursor:pointer; touch-action:manipulation;
+    transition:transform .15s,opacity .15s;
   }
   button:hover { transform:translateY(-1px); }
   button:disabled { opacity:.5; cursor:not-allowed; transform:none; }
   #spinBtn { color:white; background:#536fbd; box-shadow:0 5px 14px #536fbd44; }
   #resetBtn { color:#34425d; background:#e8edf5; }
-  .wheel-wrap { width:min( min(76vw,560px),100%); margin:8px auto 18px; position:relative; }
+  .wheel-wrap { width:min(100%,560px); margin:8px auto 18px; position:relative; }
   canvas { display:block; width:100%; height:auto; filter:drop-shadow(0 9px 12px rgba(34,44,70,.16)); }
   .pointer {
     position:absolute; z-index:2; top:-5px; left:50%; transform:translateX(-50%);
@@ -50,7 +52,25 @@
   .info p { margin:0; color:#667085; line-height:1.45; font-size:.92rem; }
   #pickedList { color:#596579; line-height:1.6; overflow-wrap:anywhere; }
   .count { color:#667085; font-size:.9rem; margin-top:8px; }
-  @media(max-width:600px) { .panel{padding:16px 12px}.bottom{grid-template-columns:1fr}.controls{align-items:stretch}.controls>div{width:100%}select{width:100%}button{width:100%} }
+  @media(max-width:600px) {
+    body { padding-left:10px; padding-right:10px; }
+    main { width:100%; }
+    h1 { line-height:1.15; margin-top:4px; }
+    .subtitle { font-size:.94rem; margin-bottom:16px; }
+    .panel { padding:15px 10px; border-radius:18px; }
+    .bottom { grid-template-columns:1fr; gap:10px; }
+    .controls { display:grid; grid-template-columns:1fr; gap:10px; align-items:stretch; }
+    .controls>div, select, button { width:100%; min-width:0; }
+    .wheel-wrap { width:min(100%,480px); margin:4px auto 12px; }
+    .pointer { border-left-width:13px; border-right-width:13px; border-bottom-width:27px; }
+    .result { min-height:58px; }
+    .info { padding:12px 13px; }
+  }
+  @media(max-width:360px) {
+    body { padding-left:7px; padding-right:7px; }
+    .panel { padding-left:7px; padding-right:7px; }
+    #resultName { font-size:1.55rem; }
+  }
 </style>
 </head>
 <body>
@@ -108,6 +128,8 @@
   const count = document.getElementById("count");
   const colors = ["#f6b6c8","#a9d5ee","#f8d58e","#b9dfc7","#c7b9e8","#f4c5a1","#a9c5df","#f0d0df"];
 
+  // Build the spinner dropdown once from allNames. It is intentionally never
+  // rebuilt or filtered when a name is picked from the roulette wheel.
   allNames.forEach(name => {
     const option = document.createElement("option");
     option.value = name;
@@ -189,6 +211,8 @@
       } else {
         rotation = ((rotation%(Math.PI*2))+(Math.PI*2))%(Math.PI*2);
         // Remove only the successfully selected recipient from the wheel.
+        // Do not modify allNames or spinnerSelect: every child remains
+        // selectable in WHO IS SPINNING for every subsequent turn.
         wheelNames = wheelNames.filter(n => n !== chosen);
         resultName.textContent = chosen + " 🎉";
         spinning = false;
